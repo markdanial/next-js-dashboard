@@ -1,4 +1,6 @@
 import { sql } from '@vercel/postgres';
+import { createClient } from '@/app/utils/supabase/client';
+
 import {
   CustomerField,
   CustomersTableType,
@@ -6,6 +8,8 @@ import {
   InvoicesTable,
   LatestInvoiceRaw,
   Revenue,
+  ListingsTable,
+  BreedsTable,
 } from './definitions';
 import { formatCurrency } from './utils';
 
@@ -216,3 +220,60 @@ export async function fetchFilteredCustomers(query: string) {
     throw new Error('Failed to fetch customer table.');
   }
 }
+
+export async function fetchListings(query: string = '') {
+  try {
+    const supabase = await createClient();
+    
+    const { data: listings, error } = await supabase
+      .from('listings')
+      .select(`
+        *,
+        breeds:listing_breeds(
+          listing_id,
+          breed_id,
+          breed:breeds(
+            id,
+            name,
+            slug
+          )
+        ),
+        images:listing_images(
+          id,
+          listing_id,
+          image_url,
+          created_at
+        )
+      `)
+      .ilike('title', `%${query}%`)
+      .or(`description.ilike.%${query}%,location.ilike.%${query}%`)
+      .order('created_at', { ascending: false });
+
+    console.log('Raw listings data:', JSON.stringify(listings?.[0], null, 2));
+
+    if (error) throw error;
+
+    const transformedListings = listings?.map(listing => ({
+      ...listing,
+      breeds: listing.breeds?.map((b: { breed: { id: string; name: string; slug: string } }) => b.breed) || [],
+      images: listing.images?.sort((a: { created_at: string }, b: { created_at: string }) => 
+        new Date(a.created_at).getTime() - new Date(b.created_at).getTime()
+      ).map((img: { image_url: string }) => img.image_url) || [],
+    })) || [];
+
+    console.log('Transformed listing breeds:', transformedListings?.[0]?.breeds);
+
+    return transformedListings;
+  } catch (error) {
+    console.error('Database Error:', error);
+    throw new Error('Failed to fetch listings.');
+  }
+}
+
+  export async function fetchBreeds() {
+    const supabase = await createClient();
+    const { data: breeds } = await supabase.from("breeds").select();
+
+    // return JSON.stringify(breeds, null, 2)
+    return breeds || [];
+  }

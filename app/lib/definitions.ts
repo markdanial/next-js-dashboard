@@ -86,3 +86,38 @@ export type InvoiceForm = {
   amount: number;
   status: 'pending' | 'paid';
 };
+
+export type ListingsTable = {
+  id: string;
+  title: string;
+  breed: string[];
+  gender?: string;
+  foaled?: string;
+  height?: string;
+  weight?: string;
+  color?: string;
+  markings?: string;
+  temperament?: number;
+  registered: boolean;
+  reg_association?: string;
+  reg_number?: string;
+  location?: string;
+  price: number;
+  negotiable: boolean;
+  for_sale: boolean;
+  for_lease: boolean;
+  category?: string;
+  description: string;
+  images?: string[];
+  created_at: string;
+};
+
+export type BreedsTable = {
+  id: string;
+  name: string;
+  slug: string;
+  is_active: boolean;
+  created_at: string;
+  updated_at: string;
+};
+
